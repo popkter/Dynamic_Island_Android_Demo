@@ -1,0 +1,4 @@
+<transitionSet xmlns:android="http://schemas.android.com/apk/res/android">
+    <changeBounds android:duration="300"/>
+    <slide android:slideEdge="top"/>
+</transitionSet>
