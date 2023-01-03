@@ -33,11 +33,6 @@
             android:name=".SuspendWindowService"
             android:enabled="true"
             android:exported="false" />
-
-        <service
-            android:name=".WorkAccessibilityService"
-            android:enabled="true"
-            android:exported="false" />
     </application>
 
 </manifest>

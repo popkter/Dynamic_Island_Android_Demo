@@ -1,13 +1,18 @@
 package com.example.customizeview
 
 import CustomizedAdapter
+import android.content.ComponentName
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
+import android.content.ServiceConnection
+import android.os.Build
 import android.os.Bundle
+import android.os.IBinder
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.setPadding
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -36,9 +41,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         sceneFive = Scene.getSceneForLayout(sceneRoot, R.layout.e_scene, this)
         animation =
             TransitionInflater.from(this).inflateTransition(R.transition.fade_transition)
-
     }
 
+    @RequiresApi(Build.VERSION_CODES.R)
     override fun onClick(v: View?) {
         when (v?.id) {
             R.id.btn_1 -> {
@@ -73,7 +78,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 }
                 flag = 4
                 TransitionManager.go(sceneFour, animation)
-                initRecyclerView()
+                initFirstRecyclerView()
             }
             R.id.btn_5 -> {
                 if (flag == 5) {
@@ -81,17 +86,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 }
                 flag = 5
                 TransitionManager.go(sceneFive, animation)
-                initRecyclerView_2()
+                initSecondRecyclerView()
             }
+            //打开/关闭悬浮窗
             R.id.btn_6 -> {
-                if (ViewModleMain.isVisible.value == true) {
-                  return
-                  //  ViewModleMain.isShowSuspendWindow.postValue(false)
-                } else {
-                    startService(Intent(this, SuspendWindowService::class.java))
-                    Utils.checkSuspendedWindowPermission(this) {
-                        ViewModleMain.isShowSuspendWindow.postValue(true)
-                    }
+                Utils.checkSuspendedWindowPermission(this) {
+                    bindService()
                 }
             }
 
@@ -106,6 +106,30 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
     }
 
+
+    private lateinit var viewBinder: SuspendWindowService.ViewBinder
+    private val serviceConnection = object : ServiceConnection {
+        @RequiresApi(Build.VERSION_CODES.O)
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            viewBinder = service as SuspendWindowService.ViewBinder
+            viewBinder.initView()
+            viewBinder.addView()
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            bindService()
+        }
+
+    }
+
+    private fun bindService() {
+        bindService(
+            Intent(Intent(this, SuspendWindowService::class.java)),
+            serviceConnection,
+            BIND_AUTO_CREATE
+        )
+    }
+
     private fun initAsr() {
         val textView = findViewById<TextView>(R.id.a_text_view)
         textView.text = "Hello World!"
@@ -116,7 +140,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         textView.text = "This is Dynamic Island Demo"
     }
 
-    private fun initRecyclerView() {
+    private fun initFirstRecyclerView() {
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerview)
         val stringArr: ArrayList<String> = arrayListOf(
             "北京烤鸭",
@@ -148,7 +172,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         recyclerView.layoutManager = layoutManager
     }
 
-    fun initRecyclerView_2() {
+    private fun initSecondRecyclerView() {
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerview)
         val stringArr: ArrayList<String> = arrayListOf(
             "iPhone 13 Pro Max",

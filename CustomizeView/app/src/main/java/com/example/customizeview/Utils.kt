@@ -10,6 +10,7 @@ import android.provider.Settings
 import android.text.TextUtils
 import android.util.Log
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import java.util.*
 
 /**
@@ -19,7 +20,8 @@ import java.util.*
  * @Compony 永远相信美好的事情即将发生
  */
 object Utils {
-    const val REQUEST_FLOAT_CODE=1001
+    const val REQUEST_FLOAT_CODE = 1001
+
     /**
      * 跳转到设置页面申请打开无障碍辅助功能
      */
@@ -77,6 +79,7 @@ object Utils {
     /**
      * 检查悬浮窗权限是否开启
      */
+    @RequiresApi(Build.VERSION_CODES.M)
     fun checkSuspendedWindowPermission(context: Activity, block: () -> Unit) {
         if (commonROMPermissionCheck(context)) {
             block()
@@ -88,17 +91,8 @@ object Utils {
         }
     }
 
-    /**
-     * 检查无障碍服务权限是否开启
-     */
-    fun checkAccessibilityPermission(context: Activity, block: () -> Unit) {
-        if (isServiceRunning(context, WorkAccessibilityService::class.java.canonicalName)) {
-            block()
-        } else {
-            accessibilityToSettingPage(context)
-        }
+    fun dip2px(context: Context, dpValue: Float): Int {
+        val scale = context.resources.displayMetrics.density
+        return (dpValue * scale + 0.5f).toInt()
     }
-
-    fun isNull(any: Any?): Boolean = any == null
-
 }

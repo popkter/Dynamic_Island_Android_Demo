@@ -2,31 +2,35 @@ package com.example.customizeview
 
 import CustomizedAdapter
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.graphics.PixelFormat
+import android.os.Binder
 import android.os.Build
+import android.os.IBinder
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.*
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+import android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
-import androidx.core.view.setPadding
 import androidx.lifecycle.LifecycleService
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.transition.Scene
-import androidx.transition.Transition
 import androidx.transition.TransitionInflater
 import androidx.transition.TransitionManager
 import kotlinx.coroutines.*
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.properties.Delegates
+
 
 /**
  * @功能:应用外打开Service 有局限性 特殊界面无法显示
- * @User Lmy
- * @Creat 4/15/21 5:28 PM
- * @Compony 永远相信美好的事情即将发生
+ *
  */
 class SuspendWindowService : LifecycleService() {
 
@@ -34,78 +38,89 @@ class SuspendWindowService : LifecycleService() {
         const val TAG = "SuspendWindowService"
     }
 
-    private lateinit var windowManager: WindowManager
-    private var floatRootView: View? = null
     private var isContinue = true
-    private lateinit var animation: Transition
     private var flag = 0
-    private lateinit var sceneOne: Scene
-    private lateinit var sceneTwo: Scene
-    private lateinit var sceneThree: Scene
-    private lateinit var sceneFour: Scene
-    private lateinit var sceneFive: Scene
+    private var isVisible = AtomicBoolean(false)
+    private lateinit var floatRootView: View
+    private lateinit var windowManager: WindowManager
+    private lateinit var layoutParam: WindowManager.LayoutParams
+    private var viewHeight by Delegates.notNull<Int>()
 
-    @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate() {
-        Log.e(TAG, "onCreate: ")
         super.onCreate()
-        animation = TransitionInflater.from(this).inflateTransition(R.transition.fade_transition)
-        initObserve()
+        viewHeight = Utils.dip2px(this, 260f)
     }
 
-    @RequiresApi(Build.VERSION_CODES.R)
-    private fun initObserve() {
-        Log.e(TAG, "initObserve: ")
-        ViewModleMain.apply {
-            isShowSuspendWindow.observe(this@SuspendWindowService) {
-                Log.e(TAG, "initObserve: $it")
-                if (it) {
-                    showWindow()
-                } else {
-                    isVisible.postValue(false)
-                }
-            }
+    override fun onBind(intent: Intent): IBinder {
+        Log.e(TAG, "onBind: ")
+        super.onBind(intent)
+        return ViewBinder()
+    }
+
+    inner class ViewBinder : Binder() {
+
+        fun isVisible(): Boolean {
+            return isVisible.get()
+        }
+
+        @RequiresApi(Build.VERSION_CODES.O)
+        fun initView() {
+            initWindow()
+        }
+
+        @RequiresApi(Build.VERSION_CODES.R)
+        fun addView() {
+            showWindow()
+        }
+
+        fun removeView() {
+
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.R)
-    @SuppressLint("ClickableViewAccessibility")
-    private fun showWindow() {
-        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        val layoutParam = WindowManager.LayoutParams().apply {
+    /**
+     * 初始化窗口
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun initWindow() {
+        windowManager = application.getSystemService(WINDOW_SERVICE) as WindowManager
+        layoutParam = WindowManager.LayoutParams().apply {
             type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
             val metrics = DisplayMetrics()
             windowManager.defaultDisplay.getMetrics(metrics)
             format = PixelFormat.RGBA_8888
-            flags =
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+            flags = FLAG_NOT_TOUCH_MODAL or FLAG_NOT_FOCUSABLE
             //位置大小设置
             width = MATCH_PARENT
-            height = WRAP_CONTENT
-            gravity = Gravity.START or Gravity.TOP or Gravity.CENTER
+            height = viewHeight
+            gravity = Gravity.START or Gravity.TOP
 
-            x = metrics.widthPixels - width / 2
-            //  (windowManager.currentWindowMetrics.bounds.width() - width) / 2
+            x = metrics.widthPixels
             y = 10
         }
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    @SuppressLint("ClickableViewAccessibility")
+    private fun showWindow() {
+        isVisible.set(true)
         floatRootView = LayoutInflater.from(this).inflate(R.layout.float_view, null)
-        floatRootView?.setOnTouchListener(ItemViewTouchListener(layoutParam, windowManager))
+
+        //拖动以修改悬浮窗位置
+        //floatRootView?.setOnTouchListener(ItemViewTouchListener(layoutParam, windowManager))
+
         windowManager.addView(floatRootView, layoutParam)
-        ViewModleMain.isVisible.postValue(true)
-        val sceneRoot: ViewGroup = floatRootView!!.findViewById(R.id.scene_root_float)
-        sceneOne = Scene.getSceneForLayout(sceneRoot, R.layout.a_scene, this)
-        sceneTwo = Scene.getSceneForLayout(sceneRoot, R.layout.b_scene, this)
-        sceneThree = Scene.getSceneForLayout(sceneRoot, R.layout.c_scene, this)
-        sceneFour = Scene.getSceneForLayout(sceneRoot, R.layout.d_scene, this)
-        sceneFive = Scene.getSceneForLayout(sceneRoot, R.layout.e_scene, this)
-        val animation2 =
-            TransitionInflater.from(this).inflateTransition(R.transition.fade_transition_2)
-        val animation3 =
-            TransitionInflater.from(this).inflateTransition(R.transition.fade_transition_2)
+        val sceneRoot: ViewGroup = floatRootView.findViewById(R.id.scene_root_float)
+        val sceneOne = Scene.getSceneForLayout(sceneRoot, R.layout.a_scene, this)
+        val sceneTwo = Scene.getSceneForLayout(sceneRoot, R.layout.b_scene, this)
+        val sceneThree = Scene.getSceneForLayout(sceneRoot, R.layout.c_scene, this)
+        val sceneFour = Scene.getSceneForLayout(sceneRoot, R.layout.d_scene, this)
+        val sceneFive = Scene.getSceneForLayout(sceneRoot, R.layout.e_scene, this)
+        val animation =
+            TransitionInflater.from(this).inflateTransition(R.transition.fade_transition)
 
-        TransitionManager.beginDelayedTransition(sceneRoot, animation)
-
-        floatRootView!!.rootView.setOnClickListener {
+        floatRootView.rootView.findViewById<FrameLayout>(R.id.scene_root_float).setOnClickListener {
             when (flag % 7) {
                 0 -> {
                     TransitionManager.go(sceneOne, animation)
@@ -121,19 +136,18 @@ class SuspendWindowService : LifecycleService() {
                 }
                 3 -> {
                     TransitionManager.go(sceneFour, animation)
-                    initRecyclerView()
+                    initFirstRecyclerView()
                 }
                 4 -> {
                     TransitionManager.go(sceneFive, animation)
-                    initRecyclerView_2()
+                    initSecondRecyclerView()
                 }
                 5 -> {
                     TransitionManager.go(sceneThree, animation)
                 }
                 6 -> {
                     TransitionManager.go(sceneOne, animation)
-                    floatRootView!!.findViewById<TextView>(R.id.a_text_view)
-                        .setPadding(0)
+                    initAsr()
                     isContinue = false
                 }
             }
@@ -145,18 +159,18 @@ class SuspendWindowService : LifecycleService() {
 
 
     private fun initAsr() {
-        val textView = floatRootView!!.findViewById<TextView>(R.id.a_text_view)
+        val textView = floatRootView.findViewById<TextView>(R.id.a_text_view)
         textView.text = "Hello World!"
     }
 
 
     private fun initLongAsr() {
-        val textView = floatRootView!!.findViewById<TextView>(R.id.b_text_view)
+        val textView = floatRootView.findViewById<TextView>(R.id.b_text_view)
         textView.text = "This is Dynamic Island Demo"
     }
 
-    private fun initRecyclerView() {
-        val recyclerView = floatRootView!!.findViewById<RecyclerView>(R.id.recyclerview)
+    private fun initFirstRecyclerView() {
+        val recyclerView = floatRootView.findViewById<RecyclerView>(R.id.recyclerview)
         val stringArr: ArrayList<String> = arrayListOf(
             "北京烤鸭",
             "周黑鸭",
@@ -187,8 +201,8 @@ class SuspendWindowService : LifecycleService() {
         recyclerView.layoutManager = layoutManager
     }
 
-    fun initRecyclerView_2() {
-        val recyclerView = floatRootView!!.findViewById<RecyclerView>(R.id.recyclerview)
+    private fun initSecondRecyclerView() {
+        val recyclerView = floatRootView.findViewById<RecyclerView>(R.id.recyclerview)
         val stringArr: ArrayList<String> = arrayListOf(
             "iPhone 13 Pro Max",
             "HUAWEI Mate 50 Pro",
@@ -220,14 +234,15 @@ class SuspendWindowService : LifecycleService() {
     }
 
 
+    //定时器，定时变化View
     private fun initTimer() {
         CoroutineScope(Job() + Dispatchers.Main).launch {
             delay(200)
             while (isContinue) {
                 delay(1200)
-                floatRootView!!.callOnClick()
+                floatRootView.rootView.findViewById<FrameLayout>(R.id.scene_root_float)
+                    .callOnClick()
             }
-
         }
     }
 
