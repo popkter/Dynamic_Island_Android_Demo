@@ -4,5 +4,6 @@
     android:transitionOrdering="together">
     <changeImageTransform />
     <changeBounds />
-    <fade />
+    <fade/>
+    <slide android:slideEdge="top"/>
 </transitionSet>
