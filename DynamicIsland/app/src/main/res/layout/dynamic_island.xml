@@ -1,33 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:onClick="onClick"
-    tools:context=".MainActivity">
-
-    <Button
-        android:id="@+id/btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="100dp"
-        android:text="press"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:layout_marginTop="20dp"
+    android:gravity="center"
+    android:padding="10dp"
+    android:visibility="visible">
 
     <FrameLayout
         android:id="@+id/scene_root"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:visibility="visible"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:layout_gravity="center">
 
+        <include layout="@layout/toast_scene" />
+
+    </FrameLayout>
+
+
+    <!--
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view"
             android:layout_width="300dp"
@@ -38,7 +31,7 @@
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/toast"
-            android:layout_width="wrap_content"
+            android:layout_width="200dp"
             android:layout_height="wrap_content"
             android:background="@drawable/toast_bg"
             android:orientation="vertical">
@@ -57,7 +50,7 @@
 
             <LinearLayout
                 android:id="@+id/tips"
-                android:layout_width="match_parent"
+                android:layout_width="200dp"
                 android:layout_height="40dp"
                 android:orientation="horizontal"
                 android:padding="3dp"
@@ -70,7 +63,7 @@
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:background="@drawable/button_bg" />
+                    android:src="@drawable/ic_launcher_foreground" />
 
                 <Button
                     android:id="@+id/description"
@@ -106,8 +99,7 @@
             android:layout_gravity="center"
             android:background="@drawable/toast_bg"
             android:src="@mipmap/ic_launcher"
-            android:visibility="gone" />
+            android:visibility="gone" />-->
 
-    </FrameLayout>
+</LinearLayout>
 
-</androidx.constraintlayout.widget.ConstraintLayout>

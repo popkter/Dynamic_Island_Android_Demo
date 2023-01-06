@@ -11,6 +11,7 @@ import android.text.TextUtils
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.lifecycle.MutableLiveData
 import java.util.*
 
 /**
@@ -19,6 +20,8 @@ import java.util.*
 object CommonUtils {
 
     private const val REQUEST_FLOAT_CODE = 1001
+    private val isVisible = MutableLiveData(false)
+    private var canDismiss = false
 
     /**
      * 判断Service是否开启
@@ -74,8 +77,30 @@ object CommonUtils {
     /**
      * dp转px
      */
-    fun dip2px(context: Context, dpValue: Float): Int {
+    fun dip2px(context: Context, dpValue: Int): Int {
         val scale = context.resources.displayMetrics.density
         return (dpValue * scale + 0.5f).toInt()
     }
+
+
+    /**
+     * 记录悬浮窗是否开启
+     */
+    fun isVisible(): Boolean {
+        return isVisible.value == true
+    }
+
+
+    fun setVisible(state: Boolean) {
+        isVisible.postValue(state)
+    }
+
+    fun canDismiss(): Boolean {
+        return canDismiss
+    }
+
+    fun setDismiss(state: Boolean) {
+        canDismiss = state
+    }
+
 }
