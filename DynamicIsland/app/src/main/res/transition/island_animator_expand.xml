@@ -3,7 +3,6 @@
     android:duration="300"
     android:transitionOrdering="together">
     <changeImageTransform />
-    <changeBounds />
-    <fade/>
-    <slide android:slideEdge="top"/>
+    <changeBounds android:interpolator="@android:interpolator/anticipate_overshoot" />
+    <fade />
 </transitionSet>
