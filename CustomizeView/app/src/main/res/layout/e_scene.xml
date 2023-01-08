@@ -1,16 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/scene_container"
-    android:layout_width="400dp"
-    android:layout_height="240dp"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="top|center"
     android:background="@drawable/toast_bg"
     android:gravity="center"
-    android:orientation="vertical"
-    android:padding="2dp">
+    android:orientation="vertical">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerview"
         android:layout_width="300dp"
-        android:layout_height="match_parent"
-        android:minHeight="50dp" />
+        android:layout_height="240dp"
+        android:background="@drawable/toast_bg"
+        android:padding="5dp" />
+
 </LinearLayout>
+

@@ -207,6 +207,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     override fun onResume() {
         super.onResume()
 
+        Utils.checkSuspendedWindowPermission(this) {
+            bindService()
+        }
     }
 
 }
