@@ -13,6 +13,9 @@ class CustomizedAdapter(private val dataSet: ArrayList<String>) :
         const val TAG = "CustomizedAdapter"
     }
 
+    lateinit var detail: IDetail
+
+
     /**
      * Provide a reference to the type of views that you are using
      * (custom ViewHolder).
@@ -44,7 +47,11 @@ class CustomizedAdapter(private val dataSet: ArrayList<String>) :
     override fun getItemCount() = dataSet.size
 
     private fun show(string: String) {
-        Log.e(TAG, "show: $string")
+        detail.show(string)
+    }
+
+    interface IDetail {
+        fun show(string: String)
     }
 
 }

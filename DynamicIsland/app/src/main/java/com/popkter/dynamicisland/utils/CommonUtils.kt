@@ -18,6 +18,7 @@ import java.util.*
  * @功能: 工具类
  */
 object CommonUtils {
+    private const val TAG = "CommonUtils"
 
     private const val REQUEST_FLOAT_CODE = 1001
     private val isVisible = MutableLiveData(false)
@@ -92,6 +93,7 @@ object CommonUtils {
 
 
     fun setVisible(state: Boolean) {
+        Log.e(TAG, "setVisible: $state")
         isVisible.postValue(state)
     }
 
