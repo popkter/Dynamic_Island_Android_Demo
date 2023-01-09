@@ -1,105 +1,85 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/toast"
+    android:layout_marginTop="20dp"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:layout_gravity="center"
-    android:layout_marginTop="20dp"
-    android:gravity="center"
-    android:padding="10dp"
-    android:visibility="visible">
+    android:layout_gravity="center|top"
+    android:background="@drawable/toast_bg">
 
-    <FrameLayout
-        android:id="@+id/scene_root"
+    <TextView
+        android:id="@+id/asr"
+        android:singleLine="true"
+        android:ellipsize="end"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center">
+        android:layout_height="40dp"
+        android:gravity="center"
+        android:minWidth="200dp"
+        android:paddingHorizontal="20dp"
+        android:textColor="@color/white"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <include layout="@layout/toast_scene" />
 
-    </FrameLayout>
+    <!--recyclerView小卡-->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_view"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:paddingVertical="2dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/asr" />
 
-
-    <!--
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler_view"
-            android:layout_width="300dp"
-            android:layout_height="300dp"
-            android:background="@drawable/toast_bg"
-            android:paddingVertical="2dp"
-            android:visibility="gone" />
-
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/toast"
-            android:layout_width="200dp"
-            android:layout_height="wrap_content"
-            android:background="@drawable/toast_bg"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/asr"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:gravity="center"
-                android:paddingHorizontal="20dp"
-                android:text="Hello World !"
-                android:textColor="@color/white"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <LinearLayout
-                android:id="@+id/tips"
-                android:layout_width="200dp"
-                android:layout_height="40dp"
-                android:orientation="horizontal"
-                android:padding="3dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/asr">
-
-                <ImageView
-                    android:id="@+id/icon"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:src="@drawable/ic_launcher_foreground" />
-
-                <Button
-                    android:id="@+id/description"
-                    style="@style/button_blue_style"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginStart="3dp"
-                    android:layout_weight="5"
-                    android:gravity="center"
-                    android:padding="0dp"
-                    android:text="open"
-                    android:textSize="10sp"
-                    android:textStyle="bold"
-                    app:backgroundTint="@null" />
-
-            </LinearLayout>
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
+    <!-- tips提示 -->
+    <LinearLayout
+        android:id="@+id/tips"
+        android:layout_width="200dp"
+        android:layout_height="40dp"
+        android:orientation="horizontal"
+        android:padding="3dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/asr">
 
         <ImageView
-            android:id="@+id/image_view"
-            android:layout_width="200dp"
-            android:layout_height="200dp"
-            android:layout_gravity="center"
-            android:background="@drawable/toast_bg"
-            android:src="@mipmap/ic_launcher"
-            android:visibility="gone" />
+            android:id="@+id/icon"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:src="@drawable/ic_launcher_foreground" />
 
-        <ImageView
-            android:id="@+id/image_view2"
-            android:layout_width="400dp"
-            android:layout_height="200dp"
-            android:layout_gravity="center"
-            android:background="@drawable/toast_bg"
-            android:src="@mipmap/ic_launcher"
-            android:visibility="gone" />-->
+        <Button
+            android:id="@+id/description"
+            style="@style/button_blue_style"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="3dp"
+            android:layout_weight="5"
+            android:gravity="center"
+            android:padding="0dp"
+            android:text="open"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            app:backgroundTint="@null" />
 
-</LinearLayout>
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/image_view"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:padding="10dp"
+        android:src="@mipmap/ic_launcher"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/asr" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+
 

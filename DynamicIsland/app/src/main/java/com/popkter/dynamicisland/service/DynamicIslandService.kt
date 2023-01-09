@@ -2,8 +2,10 @@ package com.popkter.dynamicisland.service
 
 import CustomizedAdapter
 import android.animation.ValueAnimator
+import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
+import android.media.Image
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
@@ -24,6 +26,7 @@ import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.interpolator.view.animation.LinearOutSlowInInterpolator
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.transition.Scene
@@ -31,8 +34,9 @@ import androidx.transition.TransitionInflater
 import androidx.transition.TransitionManager
 import com.popkter.dynamicisland.R
 import com.popkter.dynamicisland.utils.CommonUtils
+import kotlinx.coroutines.launch
 
-class DynamicIslandService : LifecycleService() {
+class DynamicIslandService : LifecycleService(), View.OnLayoutChangeListener {
 
     companion object {
         const val TAG = "SuspendWindowService"
@@ -114,12 +118,12 @@ class DynamicIslandService : LifecycleService() {
     private var isVisibleToast = MutableLiveData(false)
     private var isVisibleRecyclerView = MutableLiveData(false)
 
+    private var lastHeight = 0
+    private var lastWidth = 0
+
     private lateinit var floatRootView: View
     private lateinit var windowManager: WindowManager
     private lateinit var layoutParam: WindowManager.LayoutParams
-    private lateinit var toast: ViewGroup
-    private lateinit var asr: TextView
-    private lateinit var tips: View
 
 
     /**
@@ -127,6 +131,7 @@ class DynamicIslandService : LifecycleService() {
      */
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
     private fun dynamicViewChange(
+        context: Context,
         /**
          * 视图想要变化的属性的初始值
          */
@@ -148,15 +153,15 @@ class DynamicIslandService : LifecycleService() {
         /**
          * 指定插值器
          */
-        animatorType: BaseInterpolator,
+        animatorType: Interpolator,
         /**
          * 指定动画结束执行的操作，偶发问题，非必须
          */
         function: (() -> Unit)?
     ) {
         ValueAnimator.ofInt(
-            startValue,
-            endValue
+            CommonUtils.dip2px(context, startValue),
+            CommonUtils.dip2px(context, endValue),
         ).apply {
             addUpdateListener {
 //                Log.e(TAG, "dynamicViewChange: ${it.animatedValue}")
@@ -205,12 +210,9 @@ class DynamicIslandService : LifecycleService() {
         return viewBinder.value
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-    }
-
     @RequiresApi(Build.VERSION_CODES.R)
     private fun initWindows() {
+        Log.e(TAG, "initWindows displayMetrics: ${this@DynamicIslandService.resources.displayMetrics.density}", )
         windowManager = application.getSystemService(WINDOW_SERVICE) as WindowManager
         layoutParam = WindowManager.LayoutParams().apply {
             type = TYPE_APPLICATION_OVERLAY
@@ -218,7 +220,7 @@ class DynamicIslandService : LifecycleService() {
             windowManager.defaultDisplay.getMetrics(metrics)
             format = PixelFormat.RGBA_8888
             flags = FLAG_NOT_TOUCH_MODAL or FLAG_NOT_FOCUSABLE or FLAG_WATCH_OUTSIDE_TOUCH
-            width = MATCH_PARENT
+            width = CommonUtils.dip2px(this@DynamicIslandService,200)
             height = WRAP_CONTENT
             gravity = Gravity.CENTER or Gravity.TOP
             y = 20
@@ -226,6 +228,12 @@ class DynamicIslandService : LifecycleService() {
 
         floatRootView =
             LayoutInflater.from(this@DynamicIslandService).inflate(R.layout.dynamic_island, null)
+        var asr = floatRootView.rootView.findViewById<TextView>(R.id.asr)
+        var imageView = floatRootView.rootView.findViewById<ImageView>(R.id.image_view)
+        var recyclerView = floatRootView.rootView.findViewById<RecyclerView>(R.id.recycler_view)
+        var tips = floatRootView.rootView.findViewById<ViewGroup>(R.id.tips)
+
+
 
         floatRootView.setOnTouchListener { _, event ->
             if (CommonUtils.canDismiss()) {
@@ -242,162 +250,86 @@ class DynamicIslandService : LifecycleService() {
             }
         }
 
-        val sceneRoot: ViewGroup = floatRootView.findViewById(R.id.scene_root)
-
-        //val recyclerView = floatRootView.findViewById<RecyclerView>(R.id.recycler_view)
-        //initRecyclerView(recyclerView)
-
-        val imageView = floatRootView.findViewById<ImageView>(R.id.image_view)
-
-        val sceneView = Scene.getSceneForLayout(sceneRoot, R.layout.imageview_scene, this)
-
-        val sceneToast = Scene.getSceneForLayout(sceneRoot, R.layout.toast_scene, this)
-
-        val sceneRecyclerView =
-            Scene.getSceneForLayout(sceneRoot, R.layout.recyclerview_scene, this)
-
-        val transitionExpand =
-            TransitionInflater.from(this).inflateTransition(R.transition.island_animator_expand)
-
-        val transitionFold =
-            TransitionInflater.from(this).inflateTransition(R.transition.island_animator_fold)
-
-        //Toast显示状态的观察者
-        isVisibleToast.observe(this) {
-            if (it) {
-                floatRootView.rootView.findViewById<Button>(R.id.description).setOnClickListener {
-                    TransitionManager.go(sceneView, transitionExpand)
-                    layoutParam.apply {
-                        width = MATCH_PARENT
-                        height = WRAP_CONTENT
-                    }.let { params ->
-                        windowManager.updateViewLayout(floatRootView, params)
-                        isVisibleImageView.postValue(true)
-                        isVisibleToast.postValue(false)
-                        isLongAsr.postValue(false)
+        asr.setOnClickListener {
+            if (isVisibleImageView.value == true) {
+                dynamicViewChange(
+                    this@DynamicIslandService,
+                    startValue = 240,
+                    endValue = 40,
+                    isWidthAnimator = HEIGHT_ANIMATOR,
+                    animatorType = fastOutSlowInInterpolator,
+                    timeout = 600,
+                    function = null
+                )
+                dynamicViewChange(
+                    this@DynamicIslandService,
+                    startValue = 260,
+                    endValue = 200,
+                    isWidthAnimator = WIDTH_ANIMATOR,
+                    animatorType = fastOutSlowInInterpolator,
+                    timeout = 300,
+                    function = null
+                )
+                isLongAsr.postValue(false)
+                isVisibleImageView.postValue(false)
+            } else {
+                isLongAsr.value.let { state ->
+                    dynamicViewChange(
+                        this@DynamicIslandService,
+                        startValue = if (state == false) 40 else 80,
+                        endValue = if (state == false) 80 else 40,
+                        isWidthAnimator = HEIGHT_ANIMATOR,
+                        animatorType = fastOutSlowInInterpolator,
+                        timeout = if (state == false) 600 else 300,
+                    ) {
+                        isLongAsr.postValue(!state!!)
                     }
-                }
-
-                toast = floatRootView.findViewById(R.id.toast_main)
-                asr = floatRootView.findViewById(R.id.asr)
-                asr.text = "This is Dynamic Island!"
-
-                tips = floatRootView.findViewById(R.id.tips)
-                asr.setOnClickListener {
-                    isLongAsr.postValue(isLongAsr.value == false)
                 }
             }
         }
 
-        isLongAsr.observe(this) {
-            if (CommonUtils.isVisible() && isVisibleToast.value == true) {
-                Log.e(TAG, "isLongAsr.observe: $it")
-                dynamicViewChange(
-                    CommonUtils.dip2px(this@DynamicIslandService, if (it) 60 else 100),
-                    CommonUtils.dip2px(this@DynamicIslandService, if (it) 100 else 60),
-                    if (it) 300 else 200,
-                    HEIGHT_ANIMATOR,
-                    if (it) anticipateOvershootInterpolator else linearInterpolator, null
-                )
-                val icon = floatRootView.rootView.findViewById<ImageView>(R.id.icon)
-                val description =
-                    floatRootView.rootView.findViewById<TextView>(R.id.description)
-                icon.setImageResource(R.drawable.ic_launcher_foreground)
-                description.text = "open"
-                tips.visibility = if (it) View.VISIBLE else View.GONE
+        isLongAsr.observe(this) { state ->
+            tips.visibility = if (state) View.VISIBLE else View.GONE
+            if (state) {
+                floatRootView.rootView.findViewById<Button>(R.id.description).setOnClickListener {
+                    isVisibleImageView.postValue(true)
+                    isLongAsr.postValue(false)
+                }
             }
         }
 
         //ImageView显示状态的观察者
         isVisibleImageView.observe(this) {
-            if (it) {
-                floatRootView.rootView.findViewById<ImageView>(R.id.image_view_scene)
-                    .setOnClickListener {
-                        /*dynamicViewChange(
-                            CommonUtils.dip2px(this@DynamicIslandService, 220f),
-                            CommonUtils.dip2px(this@DynamicIslandService, 60f),
-                            300, HEIGHT_ANIMATOR,
-                            linearInterpolator,
-                            null
-                        )
-                        TransitionManager.go(sceneToast, transitionFold)
-                        isVisibleImageView.postValue(false)
-                        isVisibleToast.postValue(true)*/
+            imageView.visibility = if (it) View.VISIBLE else View.GONE
+            asr.text = "This is Dynamic Island Demo"
 
-                        TransitionManager.go(sceneRecyclerView, transitionExpand)
-                        val recyclerView =
-                            floatRootView.rootView.findViewById<TextView>(R.id.recyclerview_scene)
-                        recyclerView.setOnClickListener {
-                            layoutParam.apply {
-                                width = MATCH_PARENT
-                                height = WRAP_CONTENT
-                            }.let { params ->
-                                windowManager.updateViewLayout(floatRootView, params)
-                                isVisibleImageView.postValue(false)
-                                isVisibleToast.postValue(false)
-                                isLongAsr.postValue(false)
-                                isVisibleRecyclerView.postValue(true)
-                            }
-                        }
-                        //initRecyclerView(recyclerView)
-                    }
-
-            }
-        }
-
-        isVisibleRecyclerView.observe(this) {
             if (it) {
                 dynamicViewChange(
-                    CommonUtils.dip2px(this@DynamicIslandService, 320),
-                    CommonUtils.dip2px(this@DynamicIslandService, 60),
-                    300,
-                    HEIGHT_ANIMATOR,
-                    linearInterpolator,
-                    null
-                )
-                TransitionManager.go(sceneToast, transitionFold)
-                isVisibleImageView.postValue(false)
-                isVisibleToast.postValue(true)
-                isVisibleRecyclerView.postValue(false)
-            }
-        }
-
-/*
-        if (isSceneImage) {
-
-            floatRootView.rootView.findViewById<ImageView>(R.id.image_view_scene).setOnClickListener {
-                Log.e(TAG, "floatRootView:setOnClickListener ")
-*/
-/*                dynamicViewChange(
-                    CommonUtils.dip2px(this@DynamicIslandService, 220f),
-                    CommonUtils.dip2px(this@DynamicIslandService, 60f),
-                    200, HEIGHT_ANIMATOR
+                    this,
+                    startValue = 80,
+                    endValue = 240,
+                    isWidthAnimator = HEIGHT_ANIMATOR,
+                    animatorType = decelerateInterpolator,
+                    timeout = 500,
                 ) {
-                    imageView.visibility = View.GONE
-                    tips.visibility = View.GONE
-                    toast.visibility = View.VISIBLE
-                }*//*
+                }
 
-                TransitionManager.go(sceneToast, transition)
-                isSceneImage.postValue(false)
+                dynamicViewChange(
+                    this,
+                    startValue = 200,
+                    endValue = 260,
+                    isWidthAnimator = WIDTH_ANIMATOR,
+                    animatorType = decelerateInterpolator,
+                    timeout = 500,
+                ) {
+                }
             }
         }
-*/
 
-        /*      recyclerView.setOnClickListener {
-                  dynamicViewChange(
-                      CommonUtils.dip2px(this@DynamicIslandService, 60f),
-                      CommonUtils.dip2px(this@DynamicIslandService, 220f),
-                      500, HEIGHT_ANIMATOR
-                  ) {}
-                  dynamicViewChange(
-                      CommonUtils.dip2px(this@DynamicIslandService, 320f),
-                      CommonUtils.dip2px(this@DynamicIslandService, 220f), 200, WIDTH_ANIMATOR
-                  ) {
-                      recyclerView.visibility = View.GONE
-                      toast.visibility = View.VISIBLE
-                  }
-              }*/
+
+        isVisibleRecyclerView.observe(this) {
+        }
+
     }
 
     private fun showWindows() {
@@ -406,11 +338,12 @@ class DynamicIslandService : LifecycleService() {
         isVisibleToast.postValue(true)
     }
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
     private fun removeWindows() {
+        windowManager.removeView(floatRootView)
         CommonUtils.setVisible(false)
         isVisibleImageView.postValue(false)
         isVisibleToast.postValue(false)
-        windowManager.removeView(floatRootView)
     }
 
     private fun initRecyclerView(recyclerView: RecyclerView) {
@@ -453,5 +386,22 @@ class DynamicIslandService : LifecycleService() {
 
     interface IViewController {
         fun execute()
+    }
+
+    override fun onLayoutChange(
+        v: View?,
+        left: Int,
+        top: Int,
+        right: Int,
+        bottom: Int,
+        oldLeft: Int,
+        oldTop: Int,
+        oldRight: Int,
+        oldBottom: Int
+    ) {
+        floatRootView.removeOnLayoutChangeListener(this)
+        lastHeight = v?.height!!
+        lastWidth = v.width
+        Log.e(TAG, "onLayoutChange: $lastHeight $lastWidth")
     }
 }
