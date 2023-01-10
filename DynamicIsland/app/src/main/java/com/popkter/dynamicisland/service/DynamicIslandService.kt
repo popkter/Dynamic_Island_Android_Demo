@@ -1,19 +1,16 @@
 package com.popkter.dynamicisland.service
 
 import CustomizedAdapter
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
-import android.media.Image
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
-import android.util.DisplayMetrics
-import android.util.Log
 import android.view.*
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.view.WindowManager.LayoutParams.*
 import android.view.animation.*
 import android.widget.Button
@@ -26,15 +23,10 @@ import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.interpolator.view.animation.LinearOutSlowInInterpolator
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.transition.Scene
-import androidx.transition.TransitionInflater
-import androidx.transition.TransitionManager
 import com.popkter.dynamicisland.R
 import com.popkter.dynamicisland.utils.CommonUtils
-import kotlinx.coroutines.launch
 
 class DynamicIslandService : LifecycleService(), View.OnLayoutChangeListener {
 
@@ -118,6 +110,7 @@ class DynamicIslandService : LifecycleService(), View.OnLayoutChangeListener {
     private var isVisibleToast = MutableLiveData(false)
     private var isVisibleRecyclerView = MutableLiveData(false)
     private var isInit = false
+    private var imageSrc = 0
 
     private val lastHeight = MutableLiveData(0)
     private val lastWidth = MutableLiveData(0)
@@ -216,12 +209,10 @@ class DynamicIslandService : LifecycleService(), View.OnLayoutChangeListener {
         windowManager = application.getSystemService(WINDOW_SERVICE) as WindowManager
         layoutParam = WindowManager.LayoutParams().apply {
             type = TYPE_APPLICATION_OVERLAY
-            val metrics = DisplayMetrics()
-            windowManager.defaultDisplay.getMetrics(metrics)
-            format = PixelFormat.RGBA_8888
+            format = PixelFormat.TRANSPARENT
             flags = FLAG_NOT_TOUCH_MODAL or FLAG_NOT_FOCUSABLE or FLAG_WATCH_OUTSIDE_TOUCH
-            width = CommonUtils.dip2px(this@DynamicIslandService, 240)
-            height = WRAP_CONTENT
+            width = 0
+            height = 10
             gravity = Gravity.CENTER or Gravity.TOP
             y = 20
         }
@@ -272,7 +263,7 @@ class DynamicIslandService : LifecycleService(), View.OnLayoutChangeListener {
             } else if (isVisibleImageView.value == true) {
                 dynamicViewChange(
                     this@DynamicIslandService,
-                    startValue = 280,
+                    startValue = 275,
                     endValue = 40,
                     isWidthAnimator = HEIGHT_ANIMATOR,
                     animatorType = OvershootInterpolator(1f),
@@ -298,7 +289,8 @@ class DynamicIslandService : LifecycleService(), View.OnLayoutChangeListener {
                         startValue = if (state == false) 40 else 80,
                         endValue = if (state == false) 80 else 40,
                         isWidthAnimator = HEIGHT_ANIMATOR,
-                        animatorType = overshootInterpolator,
+                        animatorType =
+                        if (state == false) OvershootInterpolator(2f) else OvershootInterpolator(1f),
                         timeout = if (state == false) 600 else 300,
                     ) {
                         isLongAsr.postValue(!state!!)
@@ -320,14 +312,30 @@ class DynamicIslandService : LifecycleService(), View.OnLayoutChangeListener {
         //ImageView显示状态的观察者
         isVisibleImageView.observe(this) {
             if (isInit) {
-                imageView.visibility = if (it) View.VISIBLE else View.GONE
+                imageView.apply {
+                    alpha = 0f
+                    if (it) visibility = View.VISIBLE
+                    animate()
+                        .alpha(if (it) 1f else 0f)
+                        .setDuration(300)
+                        .setListener(
+                            if (!it) {
+                                object : AnimatorListenerAdapter() {
+                                    override fun onAnimationEnd(animation: Animator?) {
+                                        super.onAnimationEnd(animation)
+                                        visibility = View.GONE
+                                    }
+                                }
+                            } else null
+                        )
+                }
                 if (it) {
                     dynamicViewChange(
                         this,
                         startValue = 280,
-                        endValue = 240,
+                        endValue = 275,
                         isWidthAnimator = HEIGHT_ANIMATOR,
-                        animatorType = OvershootInterpolator(1f),
+                        animatorType = anticipateInterpolator,
                         timeout = 500,
                         function = null
                     )
@@ -337,11 +345,11 @@ class DynamicIslandService : LifecycleService(), View.OnLayoutChangeListener {
                         startValue = 280,
                         endValue = 260,
                         isWidthAnimator = WIDTH_ANIMATOR,
-                        animatorType = OvershootInterpolator(1f),
+                        animatorType = anticipateInterpolator,
                         timeout = 500,
                         function = null
                     )
-                    imageView.setImageResource(R.drawable.iphone_14_pro)
+                    imageView.setImageResource(imageSrc)
                 }
             }
         }
@@ -379,9 +387,50 @@ class DynamicIslandService : LifecycleService(), View.OnLayoutChangeListener {
 
     private fun showWindows() {
         windowManager.addView(floatRootView, layoutParam)
-        isInit = true
-        CommonUtils.setVisible(true)
-        isVisibleToast.postValue(true)
+
+        ValueAnimator.ofInt(
+            10,
+            110
+        ).apply {
+            addUpdateListener {
+                layoutParam.apply {
+                    height = it?.animatedValue as Int
+                }.let { params ->
+                    windowManager.updateViewLayout(floatRootView, params)
+                }
+            }
+            duration = 400
+            interpolator = overshootInterpolator
+        }.start()
+
+        ValueAnimator.ofInt(
+            0,
+            660
+        ).apply {
+            addUpdateListener {
+                layoutParam.apply {
+                    width = it?.animatedValue as Int
+                }.let { params ->
+                    windowManager.updateViewLayout(floatRootView, params)
+                }
+            }
+            duration = 600
+            interpolator = overshootInterpolator
+
+
+            addListener(
+                onStart = {
+                },
+
+                onEnd = {
+                    isInit = true
+                    CommonUtils.setVisible(true)
+                    isVisibleToast.postValue(true)
+                }
+            )
+        }.start()
+
+
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
@@ -404,17 +453,16 @@ class DynamicIslandService : LifecycleService(), View.OnLayoutChangeListener {
 
                 addListener(
                     onStart = {
-                        false.let { state ->
-                            isVisibleImageView.postValue(state)
-                            isVisibleToast.postValue(state)
-                            isVisibleRecyclerView.postValue(state)
-                            isVisibleRecyclerView.postValue(state)
-                        }
                     },
 
                     onEnd = {
-                        CommonUtils.setVisible(false)
                         windowManager.removeView(floatRootView)
+                        CommonUtils.setVisible(false)
+                        isInit = false
+                        isVisibleImageView.postValue(false)
+                        isVisibleToast.postValue(false)
+                        isVisibleRecyclerView.postValue(false)
+                        isVisibleRecyclerView.postValue(false)
                     }
                 )
             }.start()
@@ -443,25 +491,26 @@ class DynamicIslandService : LifecycleService(), View.OnLayoutChangeListener {
             "iPhone 14 Pro",
             "HUAWEI Mate 50 Pro",
             "Xiaomi 12s Ultra",
-            "vivo X90 Pro",
-            "OPPO Find x6 Pro",
-            "Meizu 18 Pro",
-            "Realme 10 Pro",
-            "OnePlus 10 Pro",
-            "Redmi K60 Pro",
-            "Honor 80 Pro +",
+            "OPPO Find x5 Pro",
+            "Honor Magic 4 Pro +",
             "Samsung Galaxy S22 Ultra"
         )
-        val customizedAdapter = CustomizedAdapter(stringArr)
-        val detail = object : CustomizedAdapter.IDetail {
-            override fun show(string: String) {
-                isVisibleRecyclerView.postValue(false)
-                isVisibleImageView.postValue(true)
-                isLongAsr.postValue(false)
+        val customizedAdapter = CustomizedAdapter(stringArr) {
+            imageSrc = when (it) {
+                "iPhone 14 Pro" -> R.drawable.iphone14pro
+                "HUAWEI Mate 50 Pro" -> R.drawable.huaweimate50pro
+                "Xiaomi 12s Ultra" -> R.drawable.xiaomi12su
+                "OPPO Find x5 Pro" -> R.drawable.oppofind5pro
+                "Honor Magic 4 Pro +" -> R.drawable.honormagic4pro
+                "Samsung Galaxy S22 Ultra" -> R.drawable.samsunggalaxys22ultra
+                else -> R.drawable.iphone14pro
             }
+            isVisibleRecyclerView.postValue(false)
+            isVisibleImageView.postValue(true)
+            isLongAsr.postValue(false)
         }
-        customizedAdapter.detail = detail
         recyclerView.adapter = customizedAdapter
+
         val layoutManager = LinearLayoutManager(
             this, LinearLayoutManager.VERTICAL, false
         )
@@ -480,12 +529,8 @@ class DynamicIslandService : LifecycleService(), View.OnLayoutChangeListener {
         }
 
         fun removeView() {
-            removeWindows()
-        }
-    }
 
-    interface IViewController {
-        fun execute()
+        }
     }
 
     override fun onLayoutChange(

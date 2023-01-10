@@ -1,4 +1,6 @@
-import android.util.Log
+import android.graphics.Color
+import android.graphics.LinearGradient
+import android.graphics.Shader
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -6,15 +8,16 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.popkter.dynamicisland.R
 
-class CustomizedAdapter(private val dataSet: ArrayList<String>) :
+
+class CustomizedAdapter(
+    private val dataSet: ArrayList<String>,
+    private val function: (string: String) -> Unit
+) :
     RecyclerView.Adapter<CustomizedAdapter.ViewHolder>() {
 
     companion object {
         const val TAG = "CustomizedAdapter"
     }
-
-    lateinit var detail: IDetail
-
 
     /**
      * Provide a reference to the type of views that you are using
@@ -38,20 +41,19 @@ class CustomizedAdapter(private val dataSet: ArrayList<String>) :
 
     override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
         viewHolder.title.text = (position + 1).toString()
-        viewHolder.content.text = dataSet[position]
+
+        val shader: Shader = LinearGradient(
+            0f, 0f, 180f, 0f,
+            Color.WHITE, Color.BLACK, Shader.TileMode.CLAMP
+        )
+        viewHolder.content.apply {
+            paint.shader = shader
+            text = dataSet[position]
+        }
         viewHolder.itemView.setOnClickListener {
-            show(viewHolder.content.text as String)
+            function(viewHolder.content.text.toString())
         }
     }
 
     override fun getItemCount() = dataSet.size
-
-    private fun show(string: String) {
-        detail.show(string)
-    }
-
-    interface IDetail {
-        fun show(string: String)
-    }
-
 }

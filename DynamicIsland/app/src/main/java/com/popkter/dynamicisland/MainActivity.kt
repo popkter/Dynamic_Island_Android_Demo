@@ -169,7 +169,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             "Honor 80 Pro +",
             "Samsung Galaxy S22 Ultra"
         )
-        val customizedAdapter = CustomizedAdapter(stringArr)
+        val customizedAdapter = CustomizedAdapter(stringArr){
+
+        }
         recyclerView.adapter = customizedAdapter
         val layoutManager = LinearLayoutManager(
             this, LinearLayoutManager.VERTICAL, false
