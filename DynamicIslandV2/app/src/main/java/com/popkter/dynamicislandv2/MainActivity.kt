@@ -19,7 +19,7 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.hide()
         suspendedWindowUtil.initWindow(
             R.layout.suspend_window,
-            R.id.root_view
+            R.id.scene_root
         )
         lifecycleScope.launch {
             suspendedWindowUtil.showWindow()

@@ -9,15 +9,10 @@ import android.util.Log
 import android.view.*
 import android.view.WindowManager.LayoutParams
 import android.view.WindowManager.LayoutParams.*
-import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.lifecycle.MutableLiveData
-import androidx.transition.Scene
-import androidx.transition.Transition
-import androidx.transition.TransitionInflater
-import androidx.transition.TransitionManager
+import androidx.transition.*
 import com.popkter.dynamicislandv2.R
 
-class SuspendedWindowUtil(private val context: Context) : View.OnTouchListener,
+class SuspendedWindowUtil(private val context: Context) :
     View.OnLayoutChangeListener {
 
     companion object {
@@ -49,14 +44,21 @@ class SuspendedWindowUtil(private val context: Context) : View.OnTouchListener,
             width = MATCH_PARENT
             height = MATCH_PARENT
         }
-        fvRootView = LayoutInflater.from(context).inflate(SourceLayoutId, null)
+        fvRootView = LayoutInflater.from(context).inflate(R.layout.suspend_window, null)
         sceneRoot = fvRootView.findViewById(ViewContainerId)
         sceneOne = Scene.getSceneForLayout(sceneRoot, R.layout.single_asr, context)
         sceneTwo = Scene.getSceneForLayout(sceneRoot, R.layout.asr_with_image, context)
-        fvRootView.setOnTouchListener(this)
-        sceneRoot.addOnLayoutChangeListener(this)
         animation = TransitionInflater.from(context).inflateTransition(R.transition.fade_transition)
-        sceneRoot.background?.mutate()?.alpha = 255
+        sceneRoot.addOnLayoutChangeListener(this)
+        fvRootView.setOnClickListener {
+            if (currentIsOne) {
+                currentIsOne = false
+                TransitionManager.go(sceneTwo, animation)
+            } else {
+                currentIsOne = true
+                TransitionManager.go(sceneOne, animation)
+            }
+        }
     }
 
     fun showWindow() {
@@ -69,30 +71,6 @@ class SuspendedWindowUtil(private val context: Context) : View.OnTouchListener,
     fun removeWindow() {
         wM.removeView(fvRootView)
     }
-
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-        val inWidthRange = event?.x?.toInt() in lastLeft until lastRight
-        val inHeightRange = event?.y?.toInt() in lastTop until lastBottom
-        if (event?.action == MotionEvent.ACTION_DOWN) {
-            Log.e(TAG, "onTouch: ${inWidthRange && inHeightRange}")
-            return if (inWidthRange && inHeightRange) {
-                currentIsOne = if (currentIsOne) {
-                    TransitionManager.go(sceneTwo, animation)
-                    false
-                } else {
-                    TransitionManager.go(sceneOne, animation)
-                    true
-                }
-                false
-            } else {
-                true
-            }
-        } else {
-            return true
-        }
-    }
-
 
     override fun onLayoutChange(
         v: View?,
@@ -111,6 +89,9 @@ class SuspendedWindowUtil(private val context: Context) : View.OnTouchListener,
         lastTop = top
         lastRight = right
         lastBottom = bottom
+        Log.e(TAG, "onLayoutChange: $lastLeft,$lastTop,$lastRight,$lastBottom")
+        Log.e(TAG, "showWindow: ${sceneRoot.measuredWidth} ${sceneRoot.measuredHeight}", )
+
     }
 
 

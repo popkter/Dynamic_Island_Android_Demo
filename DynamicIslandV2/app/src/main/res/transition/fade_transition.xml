@@ -2,6 +2,5 @@
     android:duration="@integer/material_motion_duration_long_1"
     android:transitionOrdering="together">
     <changeImageTransform />
-    <changeBounds android:interpolator="@android:interpolator/linear"/>
-    <fade />
+    <changeBounds android:interpolator="@android:interpolator/overshoot" />
 </transitionSet>
