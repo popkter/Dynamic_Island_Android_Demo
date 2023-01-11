@@ -10,6 +10,7 @@ import android.graphics.PixelFormat
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import android.view.*
 import android.view.WindowManager.LayoutParams.*
 import android.view.animation.*
@@ -114,6 +115,10 @@ class DynamicIslandService : LifecycleService(), View.OnLayoutChangeListener {
 
     private val lastHeight = MutableLiveData(0)
     private val lastWidth = MutableLiveData(0)
+    private var lastLeft = 0
+    private var lastTop = 0
+    private var lastRight = 0
+    private var lastBottom = 0
 
     private lateinit var floatRootView: View
     private lateinit var windowManager: WindowManager
@@ -166,7 +171,22 @@ class DynamicIslandService : LifecycleService(), View.OnLayoutChangeListener {
                         height = it?.animatedValue as Int
                     }
                 }.let { params ->
-                    windowManager.updateViewLayout(floatRootView, params)
+                    if (isWidthAnimator) {
+                        floatRootView.layout(
+                            floatRootView.left - params.width / 2,
+                            floatRootView.top,
+                            floatRootView.right + params.width / 2,
+                            floatRootView.bottom
+                        )
+                    } else {
+                        floatRootView.layout(
+                            floatRootView.left,
+                            floatRootView.top ,
+                            floatRootView.right,
+                            floatRootView.bottom + params.height
+                        )
+
+                    }
                 }
 
             }
@@ -186,6 +206,7 @@ class DynamicIslandService : LifecycleService(), View.OnLayoutChangeListener {
                             function()
                         }
                     }
+                    windowManager.updateViewLayout(floatRootView,layoutParam)
                 }
             )
             interpolator = animatorType
@@ -211,8 +232,8 @@ class DynamicIslandService : LifecycleService(), View.OnLayoutChangeListener {
             type = TYPE_APPLICATION_OVERLAY
             format = PixelFormat.TRANSPARENT
             flags = FLAG_NOT_TOUCH_MODAL or FLAG_NOT_FOCUSABLE or FLAG_WATCH_OUTSIDE_TOUCH
-            width = 0
-            height = 10
+            width = WRAP_CONTENT
+            height = WRAP_CONTENT
             gravity = Gravity.CENTER or Gravity.TOP
             y = 20
         }
@@ -388,49 +409,9 @@ class DynamicIslandService : LifecycleService(), View.OnLayoutChangeListener {
     private fun showWindows() {
         windowManager.addView(floatRootView, layoutParam)
 
-        ValueAnimator.ofInt(
-            10,
-            110
-        ).apply {
-            addUpdateListener {
-                layoutParam.apply {
-                    height = it?.animatedValue as Int
-                }.let { params ->
-                    windowManager.updateViewLayout(floatRootView, params)
-                }
-            }
-            duration = 400
-            interpolator = overshootInterpolator
-        }.start()
-
-        ValueAnimator.ofInt(
-            0,
-            660
-        ).apply {
-            addUpdateListener {
-                layoutParam.apply {
-                    width = it?.animatedValue as Int
-                }.let { params ->
-                    windowManager.updateViewLayout(floatRootView, params)
-                }
-            }
-            duration = 600
-            interpolator = overshootInterpolator
-
-
-            addListener(
-                onStart = {
-                },
-
-                onEnd = {
-                    isInit = true
-                    CommonUtils.setVisible(true)
-                    isVisibleToast.postValue(true)
-                }
-            )
-        }.start()
-
-
+        isInit = true
+        CommonUtils.setVisible(true)
+        isVisibleToast.postValue(true)
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
@@ -546,6 +527,11 @@ class DynamicIslandService : LifecycleService(), View.OnLayoutChangeListener {
     ) {
         lastHeight.postValue(v?.height!!)
         lastWidth.postValue(v.width)
+        lastLeft = left
+        lastTop = top
+        lastRight = right
+        lastBottom = bottom
+        Log.e(TAG, "onLayoutChange: $left,$top,$right,$bottom")
     }
 
 
