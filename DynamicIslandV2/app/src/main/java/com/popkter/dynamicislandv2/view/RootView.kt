@@ -2,6 +2,7 @@ package com.popkter.dynamicislandv2.view
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Canvas
 import android.os.Build
 import android.util.AttributeSet
 import android.util.Log
@@ -42,14 +43,12 @@ class RootView constructor(context: Context?, attrs: AttributeSet? = null) :
         val childCount = childCount
         for (i in 0 until childCount) {
             val childView: View = getChildAt(i)
+
             measureChild(childView, widthMeasureSpec, heightMeasureSpec)
         }
     }
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
-        val lp = layoutParams as LayoutParams
-        lp.height = mScreenHeight * childCount
-        layoutParams = lp
         val width = r - l
         val height = b - t
         for (i in 0 until childCount) {
@@ -57,16 +56,15 @@ class RootView constructor(context: Context?, attrs: AttributeSet? = null) :
             if (childView.isVisible) {
                 childView.layout(
                     (width - childView.measuredWidth) / 2,
-                    t + childView.marginTop,
+                    t + paddingTop,
                     (width + childView.measuredWidth) / 2,
-                    t + childView.marginTop + childView.measuredHeight
+                    t + paddingTop + childView.measuredHeight
                 )
             }
         }
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
-        var result = true
         for (i in 0 until childCount) {
             val childView = getChildAt(i)
             if (childView.isVisible) {
@@ -83,19 +81,13 @@ class RootView constructor(context: Context?, attrs: AttributeSet? = null) :
                     TAG,
                     "dispatchTouchEvent Height: ${ev.y} ${childView.top}  ${childView.top + childView.measuredHeight} $inHeightRange"
                 )
+
                 if (inHeightRange && inWidthRange) {
-                    result = false
-                    break
-                } else {
-                    continue
+                    super.dispatchTouchEvent(ev)
                 }
             }
         }
-        Log.e(TAG, "dispatchTouchEvent: $result")
-        return if (result) {
-            result
-        } else {
-            onInterceptTouchEvent(ev)
-        }
+        Log.e(TAG, "dispatchTouchEvent")
+        return true
     }
 }

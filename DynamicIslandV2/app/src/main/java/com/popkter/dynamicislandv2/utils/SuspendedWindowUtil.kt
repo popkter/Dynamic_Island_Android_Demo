@@ -9,15 +9,32 @@ import android.util.Log
 import android.view.*
 import android.view.WindowManager.LayoutParams
 import android.view.WindowManager.LayoutParams.*
+import android.view.animation.OvershootInterpolator
+import android.widget.TextView
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.lifecycleScope
 import androidx.transition.*
+import androidx.transition.TransitionSet.ORDERING_TOGETHER
 import com.popkter.dynamicislandv2.R
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.random.Random
 
-class SuspendedWindowUtil(private val context: Context) :
+class SuspendedWindowUtil(
+    private val context: Context,
+    private val lifecycleOwner: LifecycleOwner
+) :
     View.OnLayoutChangeListener {
 
     companion object {
         const val TAG = "SuspendedWindowUtil"
     }
+
+    private val isSingleAsrVisible = MutableLiveData(false)
+    private val isAsrWithToastVisible = MutableLiveData(false)
+    private val isAsrWithImageVisible = MutableLiveData(false)
+    private val isEmptyScene = MutableLiveData(true)
 
     private var lastLeft = 0
     private var lastTop = 0
@@ -31,8 +48,10 @@ class SuspendedWindowUtil(private val context: Context) :
     private lateinit var fvRootView: View
     private lateinit var lpRootView: LayoutParams
     private lateinit var sceneRoot: ViewGroup
+    private lateinit var sceneEmpty: Scene
     private lateinit var sceneOne: Scene
     private lateinit var sceneTwo: Scene
+    private lateinit var sceneThree: Scene
     private lateinit var animation: Transition
 
     fun initWindow(SourceLayoutId: Int, ViewContainerId: Int) {
@@ -46,17 +65,61 @@ class SuspendedWindowUtil(private val context: Context) :
         }
         fvRootView = LayoutInflater.from(context).inflate(R.layout.suspend_window, null)
         sceneRoot = fvRootView.findViewById(ViewContainerId)
+        sceneEmpty = Scene.getSceneForLayout(sceneRoot, R.layout.empty_scene, context)
         sceneOne = Scene.getSceneForLayout(sceneRoot, R.layout.single_asr, context)
         sceneTwo = Scene.getSceneForLayout(sceneRoot, R.layout.asr_with_image, context)
-        animation = TransitionInflater.from(context).inflateTransition(R.transition.fade_transition)
+        sceneThree = Scene.getSceneForLayout(sceneRoot, R.layout.asr_with_toast, context)
+        //animation = TransitionInflater.from(context).inflateTransition(R.transition.fade_transition)
+
+        animation = TransitionSet().apply {
+            addTransition(ChangeImageTransform())
+            addTransition(ChangeBounds().apply { interpolator = OvershootInterpolator(1F) })
+            ordering = ORDERING_TOGETHER
+            duration = 300
+        }
+
         sceneRoot.addOnLayoutChangeListener(this)
-        fvRootView.setOnClickListener {
-            if (currentIsOne) {
-                currentIsOne = false
-                TransitionManager.go(sceneTwo, animation)
-            } else {
-                currentIsOne = true
+        sceneRoot.setOnClickListener {
+            when (Random.nextInt(100) % 4) {
+                0 -> isSingleAsrVisible.postValue(true)
+                1 -> isAsrWithToastVisible.postValue(true)
+                2 -> isAsrWithImageVisible.postValue(true)
+                3 -> {
+                    isEmptyScene.postValue(true)
+                    lifecycleOwner.lifecycleScope.launch {
+                        delay(1000)
+                        isSingleAsrVisible.postValue(true)
+                    }
+                }
+                else -> {}
+            }
+        }
+
+        isEmptyScene.observe(lifecycleOwner) {
+            it?.let {
+                TransitionManager.go(sceneEmpty, animation)
+            }
+        }
+
+        isSingleAsrVisible.observe(lifecycleOwner) {
+            it?.let {
                 TransitionManager.go(sceneOne, animation)
+                fvRootView.findViewById<TextView>(R.id.single_asr_asr)?.text = "Halo World!"
+            }
+        }
+
+        isAsrWithToastVisible.observe(lifecycleOwner) {
+            it?.let {
+                TransitionManager.go(sceneThree, animation)
+                fvRootView.findViewById<TextView>(R.id.asr_with_toast_asr)?.text = "Halo World!"
+                fvRootView.findViewById<TextView>(R.id.asr_with_toast_tip)?.text = "Android"
+            }
+        }
+
+        isAsrWithImageVisible.observe(lifecycleOwner) {
+            it?.let {
+                TransitionManager.go(sceneTwo, animation.apply { duration = 500 })
+                fvRootView.findViewById<TextView>(R.id.asr_with_image_asr)?.text = "Halo World!"
             }
         }
     }
@@ -64,7 +127,10 @@ class SuspendedWindowUtil(private val context: Context) :
     fun showWindow() {
         CommonUtils.checkSuspendedWindowPermission(context as Activity) {
             wM.addView(fvRootView, lpRootView)
-            TransitionManager.go(sceneOne)
+            lifecycleOwner.lifecycleScope.launch{
+                delay(1000)
+                isSingleAsrVisible.postValue(true)
+            }
         }
     }
 
@@ -89,10 +155,7 @@ class SuspendedWindowUtil(private val context: Context) :
         lastTop = top
         lastRight = right
         lastBottom = bottom
-        Log.e(TAG, "onLayoutChange: $lastLeft,$lastTop,$lastRight,$lastBottom")
-        Log.e(TAG, "showWindow: ${sceneRoot.measuredWidth} ${sceneRoot.measuredHeight}", )
-
+/*        Log.e(TAG, "onLayoutChange: $lastLeft,$lastTop,$lastRight,$lastBottom")
+        Log.e(TAG, "showWindow: ${sceneRoot.measuredWidth} ${sceneRoot.measuredHeight}")*/
     }
-
-
 }

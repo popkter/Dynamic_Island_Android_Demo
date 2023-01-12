@@ -12,15 +12,15 @@
         android:id="@+id/asr_with_image_asr"
         android:layout_width="wrap_content"
         android:layout_height="40dp"
-        android:gravity="center"
         android:layout_gravity="center"
+        android:gravity="center"
         android:paddingHorizontal="20dp"
         android:textColor="@color/white" />
 
     <ImageView
         android:id="@+id/asr_with_image_image_view"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
+        android:layout_width="220dp"
+        android:layout_height="220dp"
         android:contentDescription="@string/app_name"
         android:padding="10dp"
         android:src="@mipmap/ic_launcher" />

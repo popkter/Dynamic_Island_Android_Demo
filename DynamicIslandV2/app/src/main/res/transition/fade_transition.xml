@@ -3,4 +3,5 @@
     android:transitionOrdering="together">
     <changeImageTransform />
     <changeBounds android:interpolator="@android:interpolator/overshoot" />
+    <changeClipBounds />
 </transitionSet>
