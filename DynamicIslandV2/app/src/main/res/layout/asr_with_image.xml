@@ -19,8 +19,8 @@
 
     <ImageView
         android:id="@+id/asr_with_image_image_view"
-        android:layout_width="220dp"
-        android:layout_height="220dp"
+        android:layout_width="240dp"
+        android:layout_height="240dp"
         android:contentDescription="@string/app_name"
         android:padding="10dp"
         android:src="@mipmap/ic_launcher" />
