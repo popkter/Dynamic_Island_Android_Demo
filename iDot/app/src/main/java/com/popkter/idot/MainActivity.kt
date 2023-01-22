@@ -1,33 +1,23 @@
 package com.popkter.idot
 
-import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
+import android.content.Intent
 import android.os.Bundle
-import android.util.Log
-import android.view.LayoutInflater
-import androidx.annotation.RequiresApi
-import com.popkter.idot.util.CommonUtils
-import com.popkter.idot.util.WindowManagerUtil
+import androidx.appcompat.app.AppCompatActivity
+import com.popkter.idot.databinding.*
 
-@RequiresApi(Build.VERSION_CODES.R)
 class MainActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "MainActivity"
     }
 
+    private lateinit var activityMainBinding: ActivityMainBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        activityMainBinding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(activityMainBinding.root)
+        startService(Intent(this, MyService::class.java))
     }
 
-    override fun onResume() {
-        super.onResume()
 
-        val windowManagerUtil = WindowManagerUtil(this)
-        val view = LayoutInflater.from(this).inflate(R.layout.i_dot, null)
-        windowManagerUtil.addView(view, WindowManagerUtil.CUSTOM_LP)
-        CommonUtils.checkSuspendedWindowPermission(this) {
-            windowManagerUtil.showView()
-        }
-    }
 }

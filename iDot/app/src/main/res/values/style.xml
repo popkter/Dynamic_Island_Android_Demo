@@ -4,5 +4,6 @@
     <style name="button_blue_style">
         <item name="android:textColor">@color/white</item>
         <item name="android:background">@drawable/button_bg</item>
+        <item name="android:padding">0dp</item>
     </style>
 </resources>
