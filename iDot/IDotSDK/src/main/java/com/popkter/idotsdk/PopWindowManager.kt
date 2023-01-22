@@ -134,7 +134,6 @@ class PopWindowManager(private val context: Context, private val lifecycleOwner:
             true
         }
         sceneRoot = iDotBinding.viewContainer
-        val scnen = Scene.getSceneForLayout()
         iDotBinding.root.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED)
         initHeight = iDotBinding.asr.measuredHeight
         initWidth = iDotBinding.asr.measuredWidth
